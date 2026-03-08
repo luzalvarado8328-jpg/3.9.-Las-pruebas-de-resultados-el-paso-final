@@ -12,6 +12,13 @@ public class PlayerController : MonoBehaviour
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
 
+    [Header("Disparo")]
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+    public float fireRate = 0.3f;
+    private float nextFireTime = 0f;
+    private float facingDirection = 1f;
+
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private bool isGrounded;
@@ -51,14 +58,27 @@ public class PlayerController : MonoBehaviour
 
         // Voltear el sprite según la dirección
         if (moveInput > 0)
+        {
             spriteRenderer.flipX = false;
+            facingDirection = 1f;
+        }
         else if (moveInput < 0)
+        {
             spriteRenderer.flipX = true;
+            facingDirection = -1f;
+        }
 
         // Salto con tecla Espacio o W o flecha arriba
         if ((keyboard.spaceKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame) && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        }
+
+        // Disparo con tecla F o clic izquierdo
+        if ((keyboard.fKey.wasPressedThisFrame || Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) && Time.time >= nextFireTime)
+        {
+            Shoot();
+            nextFireTime = Time.time + fireRate;
         }
 
         // Determinar estado actual
@@ -108,6 +128,19 @@ public class PlayerController : MonoBehaviour
                 spriteRenderer.color = new Color(0.9f, 0.95f, 1f, 1f);
                 break;
         }
+    }
+
+    void Shoot()
+    {
+        if (bulletPrefab == null || firePoint == null) return;
+
+        // Ajustar la posición del firePoint según la dirección
+        Vector3 fpLocal = firePoint.localPosition;
+        fpLocal.x = Mathf.Abs(fpLocal.x) * facingDirection;
+        firePoint.localPosition = fpLocal;
+
+        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+        bullet.GetComponent<Bullet>().SetDirection(facingDirection);
     }
 
     // Dibujar el radio de detección de suelo en el editor
