@@ -19,13 +19,32 @@ public class PlayerController : MonoBehaviour
     private float nextFireTime = 0f;
     private float facingDirection = 1f;
 
+    [Header("Mecánicas avanzadas")]
+    public float coyoteTime = 0.12f;
+    public float jumpBufferTime = 0.15f;
+    public float dashSpeed = 15f;
+    public float dashDuration = 0.2f;
+    public float dashCooldown = 0.8f;
+
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private bool isGrounded;
     private float moveInput;
 
+    // Coyote time y jump buffer
+    private float coyoteTimer;
+    private float jumpBufferTimer;
+
+    // Dash
+    private bool isDashing;
+    private float dashTimer;
+    private float dashCooldownTimer;
+
+    // Respawn
+    private Vector3 spawnPosition;
+
     // Estado actual del personaje
-    private enum PlayerState { Idle, Run, Jump }
+    private enum PlayerState { Idle, Run, Jump, Dash }
     private PlayerState currentState = PlayerState.Idle;
 
     // Variables para animaciones por código
@@ -37,12 +56,32 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         originalScale = transform.localScale;
+        spawnPosition = transform.position;
     }
 
     void Update()
     {
+        if (isDashing)
+        {
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0f)
+            {
+                isDashing = false;
+                rb.gravityScale = 3f;
+            }
+            animTimer += Time.deltaTime;
+            ApplyStateAnimation();
+            return;
+        }
+
         // Detectar si está en el suelo
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
+        // Coyote time: permite saltar poco después de dejar el suelo
+        if (isGrounded)
+            coyoteTimer = coyoteTime;
+        else
+            coyoteTimer -= Time.deltaTime;
 
         // Movimiento horizontal con teclas A/D o flechas
         Keyboard keyboard = Keyboard.current;
@@ -68,10 +107,36 @@ public class PlayerController : MonoBehaviour
             facingDirection = -1f;
         }
 
-        // Salto con tecla Espacio o W o flecha arriba
-        if ((keyboard.spaceKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame) && isGrounded)
+        // Jump buffer: registra intención de salto
+        if (keyboard.spaceKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
+            jumpBufferTimer = jumpBufferTime;
+        else
+            jumpBufferTimer -= Time.deltaTime;
+
+        // Salto con coyote time + jump buffer
+        if (jumpBufferTimer > 0f && coyoteTimer > 0f)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            jumpBufferTimer = 0f;
+            coyoteTimer = 0f;
+        }
+
+        // Salto variable: soltar la tecla corta el salto
+        if ((keyboard.spaceKey.wasReleasedThisFrame || keyboard.wKey.wasReleasedThisFrame || keyboard.upArrowKey.wasReleasedThisFrame)
+            && rb.linearVelocity.y > 0f)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
+        }
+
+        // Dash con Shift
+        dashCooldownTimer -= Time.deltaTime;
+        if (keyboard.leftShiftKey.wasPressedThisFrame && dashCooldownTimer <= 0f)
+        {
+            isDashing = true;
+            dashTimer = dashDuration;
+            dashCooldownTimer = dashCooldown;
+            rb.gravityScale = 0f;
+            rb.linearVelocity = new Vector2(facingDirection * dashSpeed, 0f);
         }
 
         // Disparo con tecla F o clic izquierdo
@@ -82,7 +147,9 @@ public class PlayerController : MonoBehaviour
         }
 
         // Determinar estado actual
-        if (!isGrounded)
+        if (isDashing)
+            currentState = PlayerState.Dash;
+        else if (!isGrounded)
             currentState = PlayerState.Jump;
         else if (Mathf.Abs(moveInput) > 0.1f)
             currentState = PlayerState.Run;
@@ -127,6 +194,14 @@ public class PlayerController : MonoBehaviour
                 // Tinte ligeramente celeste al saltar
                 spriteRenderer.color = new Color(0.9f, 0.95f, 1f, 1f);
                 break;
+
+            case PlayerState.Dash:
+                // Aplastamiento horizontal al hacer dash
+                transform.localScale = new Vector3(scaleX * 1.15f, scaleY * 0.85f, originalScale.z);
+                transform.localRotation = Quaternion.identity;
+                // Tinte rosado durante el dash
+                spriteRenderer.color = new Color(1f, 0.7f, 0.85f, 1f);
+                break;
         }
     }
 
@@ -141,6 +216,14 @@ public class PlayerController : MonoBehaviour
 
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
         bullet.GetComponent<Bullet>().SetDirection(facingDirection);
+    }
+
+    public void Respawn()
+    {
+        transform.position = spawnPosition;
+        rb.linearVelocity = Vector2.zero;
+        isDashing = false;
+        rb.gravityScale = 3f;
     }
 
     // Dibujar el radio de detección de suelo en el editor
