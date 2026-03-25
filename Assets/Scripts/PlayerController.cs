@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
+    private Animator animator;
     private bool isGrounded;
     private float moveInput;
 
@@ -43,19 +44,11 @@ public class PlayerController : MonoBehaviour
     // Respawn
     private Vector3 spawnPosition;
 
-    // Estado actual del personaje
-    private enum PlayerState { Idle, Run, Jump, Dash }
-    private PlayerState currentState = PlayerState.Idle;
-
-    // Variables para animaciones por código
-    private Vector3 originalScale;
-    private float animTimer;
-
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        originalScale = transform.localScale;
+        animator = GetComponent<Animator>();
         spawnPosition = transform.position;
     }
 
@@ -68,9 +61,8 @@ public class PlayerController : MonoBehaviour
             {
                 isDashing = false;
                 rb.gravityScale = 3f;
+                spriteRenderer.color = Color.white;
             }
-            animTimer += Time.deltaTime;
-            ApplyStateAnimation();
             return;
         }
 
@@ -137,6 +129,7 @@ public class PlayerController : MonoBehaviour
             dashCooldownTimer = dashCooldown;
             rb.gravityScale = 0f;
             rb.linearVelocity = new Vector2(facingDirection * dashSpeed, 0f);
+            spriteRenderer.color = new Color(1f, 0.7f, 0.85f, 1f);
         }
 
         // Disparo con tecla F o clic izquierdo
@@ -146,63 +139,10 @@ public class PlayerController : MonoBehaviour
             nextFireTime = Time.time + fireRate;
         }
 
-        // Determinar estado actual
-        if (isDashing)
-            currentState = PlayerState.Dash;
-        else if (!isGrounded)
-            currentState = PlayerState.Jump;
-        else if (Mathf.Abs(moveInput) > 0.1f)
-            currentState = PlayerState.Run;
-        else
-            currentState = PlayerState.Idle;
-
-        // Aplicar animación según estado
-        animTimer += Time.deltaTime;
-        ApplyStateAnimation();
-    }
-
-    void ApplyStateAnimation()
-    {
-        float scaleX = Mathf.Abs(originalScale.x);
-        float scaleY = Mathf.Abs(originalScale.y);
-
-        switch (currentState)
-        {
-            case PlayerState.Idle:
-                // Respiración suave: escala sube y baja lentamente
-                float breathe = 1f + Mathf.Sin(animTimer * 2f) * 0.03f;
-                transform.localScale = new Vector3(scaleX, scaleY * breathe, originalScale.z);
-                transform.localRotation = Quaternion.identity;
-                spriteRenderer.color = Color.white;
-                break;
-
-            case PlayerState.Run:
-                // Balanceo lateral + rebote al correr
-                float bounce = 1f + Mathf.Abs(Mathf.Sin(animTimer * 10f)) * 0.05f;
-                float tilt = Mathf.Sin(animTimer * 10f) * 3f;
-                transform.localScale = new Vector3(scaleX, scaleY * bounce, originalScale.z);
-                transform.localRotation = Quaternion.Euler(0, 0, tilt);
-                spriteRenderer.color = Color.white;
-                break;
-
-            case PlayerState.Jump:
-                // Estiramiento vertical al saltar
-                float stretch = 1.08f;
-                float squeeze = 0.92f;
-                transform.localScale = new Vector3(scaleX * squeeze, scaleY * stretch, originalScale.z);
-                transform.localRotation = Quaternion.identity;
-                // Tinte ligeramente celeste al saltar
-                spriteRenderer.color = new Color(0.9f, 0.95f, 1f, 1f);
-                break;
-
-            case PlayerState.Dash:
-                // Aplastamiento horizontal al hacer dash
-                transform.localScale = new Vector3(scaleX * 1.15f, scaleY * 0.85f, originalScale.z);
-                transform.localRotation = Quaternion.identity;
-                // Tinte rosado durante el dash
-                spriteRenderer.color = new Color(1f, 0.7f, 0.85f, 1f);
-                break;
-        }
+        // Actualizar parámetros del Animator según el estado de movimiento
+        animator.SetFloat("Speed", Mathf.Abs(moveInput));
+        animator.SetBool("IsGrounded", isGrounded);
+        animator.SetBool("IsJumping", !isGrounded);
     }
 
     void Shoot()

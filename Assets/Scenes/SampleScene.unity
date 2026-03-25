@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 100000002}
   - component: {fileID: 100000003}
   - component: {fileID: 100000006}
+  - component: {fileID: 100000007}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -258,7 +259,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -1}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -309,6 +310,26 @@ MonoBehaviour:
   bulletPrefab: {fileID: 300000000, guid: a4437a288b245f146abcff0d0092b2fe, type: 3}
   firePoint: {fileID: 100200004}
   fireRate: 0.3
+--- !u!95 &100000007
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000000}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 11020000, guid: e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &100100000
 GameObject:
   m_ObjectHideFlags: 0
