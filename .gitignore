@@ -59,4 +59,13 @@ Thumbs.db
 
 # VS config
 .vsconfig
+.vs/
+
+# Visual Studio upgrade logs
+UpgradeLog*.htm
+_UpgradeReport_Files/
+
+# Unity crash/autosave recovery
+Assets/_Recovery/
+Assets/_Recovery.meta
 
