@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,7 +11,21 @@ public class GameManager : MonoBehaviour
     public bool level1Complete = false;
     public bool level2Complete = false;
 
-    private bool dataLoaded = false;
+    [Header("Regreso al menu")]
+    public string escenaMenu = "MainMenu";
+
+    void Update()
+    {
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            string actual = SceneManager.GetActiveScene().name;
+            if (actual != escenaMenu)
+            {
+                SaveToFirestore();
+                SceneManager.LoadScene(escenaMenu);
+            }
+        }
+    }
 
     void Awake()
     {
@@ -93,7 +108,6 @@ public class GameManager : MonoBehaviour
                 totalCoins = coins;
                 level1Complete = lvl1;
                 level2Complete = lvl2;
-                dataLoaded = true;
 
                 Debug.Log($"Datos cargados - Monedas: {totalCoins}, Nivel1: {level1Complete}, Nivel2: {level2Complete}");
 
